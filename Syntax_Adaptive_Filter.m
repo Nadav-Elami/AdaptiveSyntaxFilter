@@ -7,7 +7,7 @@ alphabet = {'a', 'b', 'c'};
 
 % Define Simulation Parameters
 seq_range = [3, 10];                                     % Desired sequence length
-n_sequences = 7;                                       % Desired num sequences
+n_sequences = 70;                                        % Desired num sequences
 x_init =   [4;
             2;
             5;
@@ -19,7 +19,7 @@ x_init =   [4;
             7;
             9;
             11;
-            2];                                         % Initial x values
+            2];                                           % Initial x values
 SF = 1/sqrt(n_sequences);                                 % Scaling Factor for Sigma_init
 Sigma_init = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
               0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
@@ -33,8 +33,8 @@ Sigma_init = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
               0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0;
               0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0;
               0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]/SF;   % Initial Sigma matrix
-p =4;
-[sequences, x_values] = simulate_birdsong(n_sequences, seq_range, x_init, Sigma_init, p);
+
+[sequences, x_values] = simulate_birdsong(n_sequences, seq_range, x_init, Sigma_init);
 
 %% === Initialization of EM Algorithm === %%
 
