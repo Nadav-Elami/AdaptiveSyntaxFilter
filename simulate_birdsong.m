@@ -1,4 +1,4 @@
-function [sequences, x_values] = simulate_birdsong(num_sequences, seq_range, x_init, Sigma_init, p) % take p off
+function [sequences, x_values] = simulate_birdsong(num_sequences, seq_range, x_init, Sigma_init)
 
 % Define the alphabet
 alphabet = {'a', 'b', 'c'};
@@ -43,14 +43,7 @@ for seq_idx = 1:num_sequences
     x_values(:, seq_idx) = x;
     
     % Add Gaussian noise to x for the next sequence
-    if p == 1
-        x = x + 0*mvnrnd(zeros(size(x)), Sigma)';
-    elseif p == 4
-        SigmaNew = (1 - seq_idx/num_sequences) * Sigma;
-        x = x + mvnrnd(zeros(size(x)), SigmaNew)';
-    else
-        x = x + mvnrnd(zeros(size(x)), Sigma)'; % this is the only line that should be left
-    end
+    x = x + mvnrnd(zeros(size(x)), Sigma)';
 end
 
 end
