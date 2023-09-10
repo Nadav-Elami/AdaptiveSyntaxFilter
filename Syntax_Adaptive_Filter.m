@@ -6,8 +6,8 @@ rng(0) % Fixed seed for reproducibility
 alphabet = {'a', 'b', 'c'};
 
 % Define Simulation Parameters
-seq_range = [3, 10];                                     % Desired sequence length
-n_sequences = 70;                                        % Desired num sequences
+seq_range = [3, 8];                                     % Desired sequence length
+n_sequences = 500;                                      % Desired num sequences
 x_init =   [4;
             2;
             5;
@@ -20,21 +20,10 @@ x_init =   [4;
             9;
             11;
             2];                                           % Initial x values
-SF = 1/sqrt(n_sequences);                                 % Scaling Factor for Sigma_init
-Sigma_init = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
-              0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
-              0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0;
-              0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0;
-              0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0;
-              0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0;
-              0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0;
-              0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0;
-              0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0;
-              0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0;
-              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0;
-              0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]/SF;   % Initial Sigma matrix
+SF = sqrt(n_sequences);                                   % Scaling Factor for Sigma_init
 
-[sequences, x_values] = simulate_birdsong(n_sequences, seq_range, x_init, Sigma_init);
+
+[sequences, x_values, A] = simulate_birdsong(n_sequences, seq_range, x_init, Sigma_init);
 
 %% === Initialization of EM Algorithm === %%
 
@@ -54,7 +43,7 @@ R = num_phrases + num_phrases^2;
 x_0 = randn(R, 1);
 
 % Random noise matrix
-Sigma = diag(rand(R, 1))/scaling_factor;
+Sigma = diag(rand(R, 1))/(SF*150);
 
 % Initialize other matrices and vectors
 x_k_k_1     = zeros(R, K);      % State estimate at time k given observations up to k
@@ -74,7 +63,7 @@ x_k_k_1(:, 1)       = x_0;
 W_k_k_1(:, :, 1)    = Sigma;
 
 % Maximum number of iterations for the EM algorithm
-MAX_ITERATIONS = 150;
+MAX_ITERATIONS = 500;
 
 % Convergence limit for the EM algorithm
 convergence_measure = zeros(1,MAX_ITERATIONS);
@@ -90,6 +79,14 @@ EM_stop_criterion = 0;
 
 % Create a figure outside the loop
 figure("Position",[21.67,42,727.33,605.33]);
+
+
+% % Define video object
+% % Generate the video filename
+% videoFile = sprintf('Video_Name.avi');
+% videoObj = VideoWriter(videoFile);
+% open(videoObj);
+
 
 while (Current_EM_iter <= MAX_ITERATIONS) && (EM_stop_criterion == 0)
     %% === E Step - Forward Filter === %%
@@ -224,7 +221,7 @@ while (Current_EM_iter <= MAX_ITERATIONS) && (EM_stop_criterion == 0)
     SigmaNew = diag(diag(sum_term)) / K;
 
     % Introduce a Learning Rate
-    alpha = 0.06;
+    alpha = 1/MAX_ITERATIONS; 
     Sigma = (1 - alpha) * Sigma + alpha * SigmaNew;
 
     % % 1. Update Sigma - Yarden's Way
@@ -255,11 +252,14 @@ while (Current_EM_iter <= MAX_ITERATIONS) && (EM_stop_criterion == 0)
     % Clear the current figure content
     clf;
 
-    sgtitle("Current Iteration: " + num2str(Current_EM_iter))
+    sgtitle({"Current Iteration: " + num2str(Current_EM_iter), ...
+        "Dynamic Learning Process : x^{k} = x^{k-1} + A, K = "+num2str(K)+ ...
+        ", Sequence Range = ["+num2str(seq_range(1))+", "+num2str(seq_range(2))+"]"})
 
     % Calculate Probabilities from Logits x
-    probs_sim  = softmaxMC(x_k_K(:, 1), num_phrases);
-    probs_real = softmaxMC(x_init, num_phrases);
+    probs_sim        = softmaxMC(x_k_K(:, 1), num_phrases);
+    probs_real       = softmaxMC(x_init, num_phrases);
+    probs_final_real = softmaxMC(x_init + n_sequences * A, num_phrases);
 
     % Subplot 1: Simulated x_0 probabilities
     subplot(4, 2, 1);
@@ -277,12 +277,14 @@ while (Current_EM_iter <= MAX_ITERATIONS) && (EM_stop_criterion == 0)
     subplot(4, 2, 3);
     imagesc(reshape(probs_sim(4:end), [3, 3])');
     title('Simulated Transition Matrix - Softmax(x_0(a|a,...,c|c))');
+    clim([0 1])
     colorbar;
 
     % Subplot 4: Real transition matrix
     subplot(4, 2, 4);
     imagesc(reshape(probs_real(4:end), [3, 3])');
     title('Real Transition Matrix - Softmax(x_{init}(a|a,...,c|c))');
+    clim([0 1])
     colorbar;
 
     % Subplot 5: Simulated Sigma
@@ -293,8 +295,9 @@ while (Current_EM_iter <= MAX_ITERATIONS) && (EM_stop_criterion == 0)
 
     % Subplot 6: Real Sigma
     subplot(4, 2, 6);
-    imagesc(Sigma_init);
-    title('Real Sigma');
+    imagesc(reshape(probs_final_real(4:end), [3, 3])');
+    title('Real Transition Matrix - Softmax(x_{final}(a|a,...,c|c))');
+    clim([0 1])
     colorbar;
 
     % Subplot 7+8: Convergence measure
@@ -307,6 +310,10 @@ while (Current_EM_iter <= MAX_ITERATIONS) && (EM_stop_criterion == 0)
     % Pause to create an animation effect
     pause(0.005);
 
+    % % Capture the current plot as a frame
+    % currentFrame = getframe(gcf);
+    % writeVideo(videoObj, currentFrame);
+
     % Update iteration counter
     Current_EM_iter = Current_EM_iter + 1;
 
@@ -316,4 +323,6 @@ while (Current_EM_iter <= MAX_ITERATIONS) && (EM_stop_criterion == 0)
     end
 end
 
+%% Close the video object
+% close(videoObj);
 close all;

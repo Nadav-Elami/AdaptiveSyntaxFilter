@@ -1,8 +1,11 @@
-function [sequences, x_values] = simulate_birdsong(num_sequences, seq_range, x_init, Sigma_init)
+function [sequences, x_values, A] = simulate_birdsong(num_sequences, seq_range, x_init, Sigma_init)
 
 % Define the alphabet
 alphabet = {'a', 'b', 'c'};
 num_phrases = length(alphabet);
+
+% Define dynamic process
+A = (15 * ones(length(x_init),1) - x_init) / num_sequences;
 
 % If x_init and Sigma_init are not provided, initialize them randomly
 if nargin < 3
@@ -42,8 +45,8 @@ for seq_idx = 1:num_sequences
     sequences{seq_idx} = sequence;
     x_values(:, seq_idx) = x;
     
-    % Add Gaussian noise to x for the next sequence
-    x = x + mvnrnd(zeros(size(x)), Sigma)';
+    % Apply dynamic process on x for the next sequence
+    x = x + A;
 end
 
 end
