@@ -225,7 +225,7 @@ while (Current_EM_iter <= MAX_ITERATIONS) && (EM_stop_criterion == 0)
     Sigma = (1 - alpha) * Sigma + alpha * SigmaNew;
 
     % % 1. Update Sigma - Yarden's Way
-    % SigmaNew = x_k_K_2(:,:,1) - x_k_K(:,1) * x_k_K(:,1)' + x_0 * x_0';
+    % SigmaNew = x_k_K_2(:,:,1) - x_0 * x_k_K(:,1) - x_k_K(:,1) * x_0' + x_0 * x_0';
     %
     % for k = 2:K
     %     SigmaNew = SigmaNew + x_k_K_2(:,:,k) + x_k_K_2(:,:,k-1) ...
